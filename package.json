@@ -1,0 +1,45 @@
+{
+    "name": "mira-bot-v1",
+    "version": "1.0.4-beta",
+    "description": "Simple ChatBot Messenger",
+    "main": "source/",
+    "scripts": {
+        "install": "npm install --force",
+        "start": "node -e \"console.clear()\" && node source/index.js",
+        "lint": "eslint . --ext .js",
+        "lint:fix": "eslint . --ext .js --fix"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/GiaKhang1810/mira-bot-v1.git"
+    },
+    "keywords": [
+        "mira",
+        "bot",
+        "messenger",
+        "facebook",
+        "chatbot"
+    ],
+    "author": "Khang",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18.x",
+        "npm": ">=7.0.0"
+    },
+    "bugs": {
+        "url": "https://github.com/GiaKhang1810/mira-bot/issues"
+    },
+    "homepage": "https://github.com/GiaKhang1810/mira-bot#readme",
+    "dependencies": {
+        "chalk": "^4.1.2",
+        "cheerio": "^1.1.2",
+        "express": "^5.1.0",
+        "form-data": "^4.0.4",
+        "https-proxy-agent": "^7.0.6",
+        "mqtt": "^5.14.0",
+        "totp-generator": "^0.0.14"
+    },
+    "devDependencies": {
+        "eslint": "^9.32.0"
+    }
+}

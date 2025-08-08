@@ -1,0 +1,17 @@
+{
+    "system": {
+        "port": 3000,
+        "time_zone": "Asia/Ho_Chi_Minh",
+        "locale": "vi-VN",
+        "auto_update": true
+    },
+    "credentials": {
+        "username": "",
+        "password": "",
+        "twofactor": "",
+        "fbstate": {
+            "refresh": true,
+            "path": "fbstate.json"
+        }
+    }
+}
