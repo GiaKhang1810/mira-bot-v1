@@ -6,17 +6,24 @@ const request = require('../utils/request').defaults({ jar: true });
 const { randomUUID } = require('crypto');
 const { writeFileSync, existsSync, readFileSync, readdirSync } = require('fs');
 const { join } = require('path');
+
 const totp = require('totp-generator');
 
-function buildCore(params, jar, userID, token) {
+function buildCore(params, body, jar, userID, token) {
+    let region;
+    const endpoint = /appID:219994525426954,endpoint:"(.+?)"/g.exec(body);
+
+    if (endpoint) 
+        region = new URL(endpoint[1].replace(/\\\//g, '/')).searchParams.get('region').toUpperCase();
+
     const ctx = {
-        ...utils.makeDefaults(params, request),
+        ...utils.makeDefaults(params, request, jar),
         jar,
         userID,
-        token
+        token,
+        region
     }
 
-    console.log(ctx);
     const core = {
         getAppState: function getAppState() {
             return jar
@@ -25,23 +32,30 @@ function buildCore(params, jar, userID, token) {
         }
     }
 
-    const pluginCorePath = join(__dirname, 'pluginCore');
-    readdirSync(pluginCorePath)
-        .filter(i => i.endsWith('.js'))
-        .forEach(plugin => {
-            core[plugin.replace('.js', '')] = require(join(pluginCorePath, plugin))(ctx, core, utils);
-        });
+    const pCoreDirPath = join(__dirname, 'pluginCore');
+    const apfileCore = readdirSync(pCoreDirPath)
+        .filter(i => i.endsWith('.js'));
+
+    for (let pfileCore of apfileCore) {
+        const pCorePath = join(pCoreDirPath, pfileCore);
+
+        try {
+            core[pfileCore.replace('.js', '')] = require(pCorePath)(ctx, core, utils);
+        } catch (error) {
+            throw error;
+        }
+    }
 
     return core;
 }
 
-async function LoginHelper(fbstate, username, password, twofactor, access_token, retry) {
+async function LoginHelper(fbstate, username, password, twofactor, access_token, proxy, retry) {
+    const jar = request.getJar();
+
     if (retry > 2)
         throw new Error('Unable to log in, unknown error.');
 
     if (fbstate && fbstate.length > 0) {
-        const jar = request.getJar();
-
         fbstate.forEach(i =>
             jar.setCookie(i, 'http://' + i.domain)
         );
@@ -52,7 +66,7 @@ async function LoginHelper(fbstate, username, password, twofactor, access_token,
             if (!isLiveCookie)
                 throw new Error('fbstate is expired or invalid.');
 
-            const business = await request.get('https://business.facebook.com/content_management');
+            const business = await request.get('https://business.facebook.com/content_management', { proxy });
             const userID = jar.getCookie('https://www.facebook.com/').find(i => i.name === 'c_user').value;
             const params = utils.extractParameters(business.body, userID);
 
@@ -61,6 +75,7 @@ async function LoginHelper(fbstate, username, password, twofactor, access_token,
             if (!token) {
                 const instance = request.createClone({
                     jar,
+                    proxy,
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'Authority': 'www.facebook.com',
@@ -163,7 +178,7 @@ async function LoginHelper(fbstate, username, password, twofactor, access_token,
             }
 
             return request
-                .get('https://www.facebook.com')
+                .get('https://www.facebook.com', { proxy })
                 .then(_ => {
                     const newState = jar.getCookie('https://www.facebook.com/');
 
@@ -171,15 +186,18 @@ async function LoginHelper(fbstate, username, password, twofactor, access_token,
                         .setCookie(newState, 'http://facebook.com/')
                         .setCookie(newState, 'http://messenger.com/');
 
-                    return buildCore(params, jar, userID, token);
+                    return buildCore(params, business.body, jar, userID, token);
                 });
         } catch (error) {
             if (username && password)
-                return LoginHelper(null, username, password, twofactor, access_token, retry += 1);
+                return LoginHelper(null, username, password, twofactor, access_token, proxy, retry += 1);
 
             throw error;
         }
     } else if (username && password && username.length > 0 && password.length > 0) {
+        if (retry > 1)
+            jar.clearCookie();
+
         const device = utils.randomDevice();
         const deviceID = randomUUID();
         const familyDeviceID = randomUUID();
@@ -221,6 +239,7 @@ async function LoginHelper(fbstate, username, password, twofactor, access_token,
 
         const instance = request.createClone({
             jar: true,
+            proxy,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Fb-Friendly-Name': formLogin.fb_api_req_friendly_name,
@@ -291,6 +310,7 @@ async function Login() {
             credentials.password,
             credentials.twofactor,
             undefined,
+            credentials.proxy,
             1
         );
 

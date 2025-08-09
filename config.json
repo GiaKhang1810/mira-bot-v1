@@ -3,7 +3,8 @@
         "port": 3000,
         "time_zone": "Asia/Ho_Chi_Minh",
         "locale": "vi-VN",
-        "auto_update": true
+        "auto_update": true,
+        "auto_restart": 0
     },
     "credentials": {
         "username": "",
@@ -12,6 +13,15 @@
         "fbstate": {
             "refresh": true,
             "path": "fbstate.json"
-        }
+        },
+        "proxy": null
+    },
+    "bot": {
+        "name": "Mira Bot",
+        "prefix": ",",
+        "adminIDs": [
+            "100036947774673"
+        ],
+        "core": {}
     }
 }

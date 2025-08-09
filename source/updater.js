@@ -47,8 +47,8 @@ async function checkGit() {
     const git = spawnSync('git', ['--version']);
 
     if (git.error || git.status !== 0) {
-        cout.warn('System', 'Git is not installed.');
-        cout.warn('System', 'Please install Git before continuing: https://git-scm.com/downloads');
+        cout.warn('Updater', 'Git is not installed.');
+        cout.warn('Updater', 'Please install Git before continuing: https://git-scm.com/downloads');
         return false;
     }
 
@@ -84,7 +84,7 @@ async function createBackup() {
             await copyRecursive(src, dest);
     }
 
-    cout.info('System', 'Backup created at .backup/');
+    cout.info('Updater', 'Backup created at .backup/');
 }
 
 async function restoreBackup() {
@@ -93,14 +93,14 @@ async function restoreBackup() {
     for (const fileOrDir of fileOrDirRestore)
         await copyRecursive(resolve(backupDir, fileOrDir), resolve(cwd, fileOrDir));
 
-    cout.info('System', 'Restore completed.');
+    cout.info('Updater', 'Restore completed.');
 }
 
 async function initGit() {
     if (existsSync(resolve(cwd, '.git')))
         return;
 
-    cout.info('System', 'Initializing Git repository...');
+    cout.info('Updater', 'Initializing Git repository...');
     execSync('git init', { cwd, stdio: 'ignore' });
     execSync('git add .', { cwd, stdio: 'ignore' });
     execSync('git commit -m "Initial backup before update"', { cwd, stdio: 'ignore' });
@@ -132,13 +132,13 @@ async function updateAndRestart() {
         process.exit(0);
     } catch (error) {
         cout.fail('Update failed.');
-        cout.error('System', error);
+        cout.error('Updater', error);
 
-        cout.warn('System', 'Restoring from backup...');
+        cout.warn('Updater', 'Restoring from backup...');
         if (existsSync(backupDir))
             await restoreBackup();
         else
-            cout.warn('System', 'No backup available to restore.');
+            cout.warn('Updater', 'No backup available to restore.');
 
         rmSync(backupDir, { recursive: true, force: true });
         rmSync(tempClone, { recursive: true, force: true });
@@ -150,26 +150,26 @@ async function updateAndRestart() {
 
 async function checkAndUpdate() {
     try {
-        cout.info('System', 'Running on version ' + version);
+        cout.info('Updater', 'Running on version ' + version);
 
         const versionCurrent = await getVersionCurrent();
 
         if (isHigherOrEqualVersion(version, versionCurrent))
             return;
 
-        cout.info('System', 'Version ' + versionCurrent + ' is available. Refer to ' + repo);
+        cout.info('Updater', 'Version ' + versionCurrent + ' is available. Refer to ' + repo);
 
         if (process.env.AUTO_UPDATE === 'true') {
             if (!(await checkGit()))
                 return;
 
-            cout.warn('System', 'System update in progress. Please do not exit the program until complete!');
+            cout.warn('Updater', 'System update in progress. Please do not exit the program until complete!');
             cout.load('Updating system...');
             await updateAndRestart();
         }
     } catch (error) {
-        cout.warn('System', 'Unable to check/update system.');
-        cout.error('System', error);
+        cout.warn('Updater', 'Unable to check/update system.');
+        cout.error('Updater', error);
     }
 }
 

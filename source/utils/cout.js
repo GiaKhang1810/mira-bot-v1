@@ -56,7 +56,7 @@ const warn = (name, text) =>
     console.log(chalk.gray(clock.time('[ HH:mm:ss DD/MM/YYYY ]')), chalk.yellow(name), text);
 
 const error = (name, err) =>
-    console.log(chalk.gray(clock.time('[ HH:mm:ss DD/MM/YYYY ]')), chalk.red(name), err.message);
+    console.log(chalk.gray(clock.time('[ HH:mm:ss DD/MM/YYYY ]')), chalk.red(name), err instanceof Error ? err.message : err);
 
 const cout = {
     load,

@@ -45,7 +45,43 @@ function sortSig(sig) {
     return sortedData;
 }
 
-function makeDefaults(params, request) {
+function makeDefaults(params, request, jar) {
+    function makeParsable(body) {
+        const withoutForLoop = body.replace(/for\s*\(\s*;\s*;\s*\)\s*;\s*/, '');
+        const maybeMultipleObjects = withoutForLoop.split(/\}\r\n *\{/);
+
+        if (maybeMultipleObjects.length === 1)
+            return maybeMultipleObjects;
+
+        return '[' + maybeMultipleObjects.join('},{') + ']';
+    }
+
+    function saveCookie(response) {
+        const state = jar.getCookie('https://www.facebook.com/');
+
+        jar.setCookie(state, 'http://messenger.com');
+
+        let body = makeParsable(response.body);
+
+        try {
+            body = JSON.parse(body);
+        } finally {
+            return body;
+        }
+    }
+
+    function getHeaders(url) {
+        return {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Referer: 'https://www.facebook.com/',
+            Host: new URL(url).hostname,
+            Origin: 'https://www.facebook.com',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (Kbody, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+            Connection: 'keep-alive',
+            'Sec-Fetch-Site': 'same-origin'
+        }
+    }
+
     function merge(body) {
         const newObj = {
             ...params
@@ -63,21 +99,36 @@ function makeDefaults(params, request) {
 
     function post(url, options) {
         options.body = merge(options.body);
+        options.headers = getHeaders(url);
+
+        return request
+            .post(url, options)
+            .then(saveCookie);
+    }
+
+    function postData(url, options) {
+        options.body = merge(options.body);
+        options.headers = getHeaders(url);
         options.query = merge(options.query);
 
-        options.headers = {
-            'Content-Type': 'multipart/form-data'
-        }
-        return request.post(url, options);
+        options.headers['Content-Type'] = 'multipart/form-data';
+
+        return request
+            .post(url, options)
+            .then(saveCookie);
     }
 
     function get(url, options) {
         options.query = merge(options.query);
-        return request.get(url, options);
+        options.headers = getHeaders(url);
+        return request
+            .get(url, options)
+            .then(saveCookie);
     }
 
     return {
         post,
+        postData,
         get
     }
 }

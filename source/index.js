@@ -8,10 +8,9 @@ function getEnvConfig() {
     const systemConfig = require('../config.json').system;
 
     const mergedConfig = process.env;
-    mergedConfig.PORT = systemConfig.port || 3000;
-    mergedConfig.TIMEZONE = systemConfig.time_zone || 'Asia/Ho_Chi_Minh';
-    mergedConfig.LOCALE = systemConfig.locale || 'vi-VN';
-    mergedConfig.AUTO_UPDATE = !!systemConfig.auto_update.toString();
+
+    for (const name in systemConfig)
+        mergedConfig[name.toUpperCase()] = systemConfig[name];
 
     return mergedConfig;
 }

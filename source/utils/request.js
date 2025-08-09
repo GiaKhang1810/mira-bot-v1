@@ -1,6 +1,9 @@
 'use strict';
 
 const { isArray, isObject, isURLSearchParams } = require('./type');
+
+const { Readable } = require('stream');
+
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const FormData = require('form-data');
 
@@ -126,7 +129,7 @@ class CookieManager {
 
     clearCookie(url) {
         if (!url) {
-            this.storage = {};
+            this.storage = {}
             return;
         }
 
@@ -308,7 +311,9 @@ Request.prototype.request = function request(options, callback) {
                     const form = new FormData();
 
                     function appendData(name, value) {
-                        if (value && value.value && value.options)
+                        if (value instanceof Readable)
+                            form.append(name, value);
+                        else if (value && value.value && value.options)
                             form.append(name, value.value, value.options);
                         else
                             form.append(name, value);
@@ -336,7 +341,8 @@ Request.prototype.request = function request(options, callback) {
                         ...headers,
                         ...body.getHeaders()
                     }
-                }
+                } else if (body instanceof Readable)
+                    headers['Content-Type'] = 'application/octet-stream';
             }
         } else {
             if (body instanceof FormData) {
@@ -351,7 +357,9 @@ Request.prototype.request = function request(options, callback) {
             } else if (isObject(body)) {
                 body = JSON.stringify(body);
                 headers['Content-Type'] = 'application/json';
-            } else if (typeof body === 'string')
+            } else if (body instanceof Readable) 
+                headers['Content-Type'] = 'application/octet-stream';
+            else if (typeof body === 'string')
                 headers['Content-Type'] = 'text/plain';
         }
 
